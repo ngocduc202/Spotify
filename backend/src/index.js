@@ -1,6 +1,8 @@
 import express from "express";
 import dotenv from "dotenv";
 import {clerkMiddleware} from '@clerk/express';
+import fileUpload from 'express-fileupload'
+import path from 'path'
 
 import userRoutes from "./routes/user.route.js"
 import authRoutes from "./routes/auth.route.js"
@@ -12,13 +14,22 @@ import connectDB from './lib/database.js';
 
 dotenv.config()
 
+const __dirname = path.resolve();
 
 const app = express();
 const PORT = process.env.PORT
 
 app.use(express.json())
-
 app.use(clerkMiddleware())
+app.use(fileUpload({
+    useTempFiles: true,
+    tempFileDir: path.join(__dirname , 'tmp'),
+    createParentPath: true,
+    limit:{
+        fileSize: 10 * 1024 * 1024
+    }
+}))
+
 
 
 app.use("/api/users" , userRoutes)
@@ -27,6 +38,10 @@ app.use("/api/admin" , adminRoutes)
 app.use("/api/songs" , songRoutes)
 app.use("/api/albums" , albumRoutes)
 app.use("/api/stats" , statRoutes)
+
+app.use((err,req, res , next) => {
+    res.status(500).json({message : process.env.NODE_ENV === "development" ? err.message : "Internal Server Error"})
+})
 
 
 
